@@ -1,28 +1,41 @@
-<div component="chat/composer" class="d-flex flex-column border-top pt-2 align-items-start">
-	<div component="chat/composer/replying-to" data-tomid="" class="text-sm px-2 mb-1 d-flex gap-2 align-items-center hidden">
-		<div component="chat/composer/replying-to-text"></div> <button component="chat/composer/replying-to-cancel" class="btn btn-ghost btn-sm px-2 py-1"><i class="fa fa-times"></i></button>
+<div component="chat/composer" class="chat-app-composer d-flex flex-column">
+	<!-- 正在回复提示（保持 NodeBB 原生逻辑） -->
+	<div component="chat/composer/replying-to" data-tomid="" class="reply-indicator text-sm px-3 py-1 d-flex gap-2 align-items-center hidden">
+		<i class="fa fa-reply text-muted"></i>
+		<div component="chat/composer/replying-to-text" class="text-truncate"></div>
+		<button component="chat/composer/replying-to-cancel" class="btn btn-sm ms-auto"><i class="fa fa-times"></i></button>
 	</div>
-	<div class="w-100 flex-grow-1 flex-nowrap position-relative d-flex rounded-2 border border-secondary p-1 align-items-end">
-		{{{ if canUpload }}}
-		<button component="chat/upload/button" class="btn btn-ghost btn-sm d-flex p-2" type="button" title="[[global:upload]]" data-bs-toggle="tooltip"><i class="fa fa-fw fa-upload"></i></button>
-		{{{ end }}}
-		<div class="flex-grow-1 align-self-center">
-			<textarea component="chat/input" placeholder="{{{ if roomName }}}[[modules:chat.placeholder.message-room, {roomName}]]{{{ else }}}[[modules:chat.placeholder.mobile]]{{{ end }}}" class="bg-transparent text-body form-control chat-input mousetrap rounded-0 border-0 shadow-none px-1 py-0" style="min-height: 1.5rem;height:0;max-height:30vh;resize:none;"></textarea>
+
+	<!-- 主输入区域 -->
+	<div class="composer-main-bar d-flex align-items-end gap-2 px-2 py-2">
+		
+		<!-- 1. 表情按钮 (左侧) -->
+		<div class="composer-left-actions">
+			<button class="btn-action" type="button" component="chat/emoji/picker" title="表情">
+				<i class="fa fa-smile-o"></i>
+			</button>
 		</div>
-		<div class="d-flex gap-1">
-			{{{ each composerActions }}}
-			<button data-action="{./action}" class="btn btn-ghost btn-sm d-flex p-2 {./class}" type="button" title="{./title}" data-bs-toggle="tooltip"><i class="fa {./icon}"></i></button>
-			{{{ end }}}
-			<button class="btn btn-ghost btn-sm d-flex p-2" type="button" data-action="send" title="[[modules:chat.send]]" data-bs-toggle="tooltip"><i class="fa fa-fw fa-paper-plane text-primary"></i></button>
+
+		<!-- 2. 大输入框 (中间) -->
+		<div class="composer-input-wrapper flex-grow-1">
+			<textarea component="chat/input" 
+				placeholder="请输入内容..." 
+				class="chat-input-app mousetrap" 
+				style="height: 40px; max-height: 120px;"></textarea>
+		</div>
+
+		<!-- 3. 动态动作按钮 (右侧) -->
+		<div class="composer-right-actions">
+			<!-- 默认是语音/更多按钮，输入文字后通过 JS 切换类名 -->
+			<button id="chat-dynamic-btn" class="btn-main-action mode-voice" type="button" data-action="send">
+				<i class="fa fa-microphone icon-mic"></i>
+				<i class="fa fa-plus icon-plus"></i>
+				<span class="text-send">发送</span>
+			</button>
 		</div>
 	</div>
-	<div class="d-flex justify-content-between align-items-center text-xs w-100 px-2 mt-1">
-		<div component="chat/composer/typing" class="">
-			<div component="chat/composer/typing/users" class="hidden"></div>
-			<div component="chat/composer/typing/text" class="hidden"></div>
-		</div>
-		<div component="chat/message/remaining" class="text-xs text-muted">{maximumChatMessageLength}</div>
-	</div>
+
+	<!-- 隐藏的上传表单 -->
 	<form class="hidden" component="chat/upload" method="post" enctype="multipart/form-data">
 		<input type="file" name="files[]" multiple class="hidden"/>
 	</form>
