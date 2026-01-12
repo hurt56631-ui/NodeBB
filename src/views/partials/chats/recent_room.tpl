@@ -1,51 +1,54 @@
 {{{ if (loadingMore && @first)}}}
-<hr class="my-1" />
+<div class="im-list-loading-separator"></div>
 {{{ end }}}
-<div component="chat/recent/room" data-roomid="{./roomId}" data-full="1" class="rounded-1 {{{ if ./unread }}}unread{{{ end }}}">
-	<div class="d-flex gap-1 justify-content-between">
-		<a href="#" class="chat-room-btn position-relative d-flex flex-grow-1 gap-2 justify-content-start align-items-start btn btn-ghost btn-sm ff-sans text-start">
-			<div class="main-avatar">
-				{{{ if ./users.length }}}
-				{{{ if ./groupChat}}}
-				<div class="position-relative stacked-avatars">
-					<span class="text-decoration-none position-absolute" href="{config.relative_path}/user/{./users.1.userslug}">{buildAvatar(./users.1, "24px", true)}</span>
-					<span class="text-decoration-none position-absolute" href="{config.relative_path}/user/{./users.0.userslug}" >{buildAvatar(./users.0, "24px", true)}</span>
-				</div>
-				{{{ else }}}
-				<span href="{config.relative_path}/user/{./users.0.userslug}" class="text-decoration-none">{buildAvatar(./users.0, "32px", true)}</span>
-				{{{ end }}}
-				{{{ else }}}
-				<span class="avatar avatar-rounded text-bg-warning" component="avatar/icon" style="--avatar-size: 32px;">?</span>
-				{{{ end }}}
-			</div>
 
-			<div class="d-flex flex-grow-1 flex-column w-100">
-				<div component="chat/room/title" class="room-name fw-semibold text-xs text-break">
-				{{{ if ./roomName}}}
-				{./roomName}
-				{{{ else }}}
-					{{{ if !./lastUser.uid }}}
-					[[modules:chat.no-users-in-room]]
-					{{{ else }}}
-					{./usernames}
-					{{{ end  }}}
-				{{{ end }}}
-				</div>
-				<!-- IMPORT partials/chats/room-teaser.tpl -->
-			</div>
-		</a>
-		<div>
-			<button class="mark-read btn btn-ghost btn-sm d-flex align-items-center justify-content-center flex-grow-0 flex-shrink-0 p-1" style="width: 1.5rem; height: 1.5rem;">
-				<i class="unread fa fa-2xs fa-circle text-primary {{{ if !./unread }}}hidden{{{ end }}}" aria-label="[[unread:mark-as-read]]"></i>
-				<i class="read fa fa-2xs fa-circle-o text-secondary {{{ if ./unread }}}hidden{{{ end }}}" aria-label="[[unread:mark-as-unread]]"></i>
-			</button>
-		</div>
-	</div>
+<div component="chat/recent/room" 
+     data-roomid="{./roomId}" 
+     data-full="1" 
+     class="im-list-item d-flex align-items-center px-3 py-2 bg-white {{{ if ./unread }}}unread{{{ end }}}">
+    
+    <!-- 1. 左侧：头像 (点击跳转个人主页) -->
+    <div class="im-list-avatar-box me-3 position-relative flex-shrink-0">
+        <!-- 强制取第0个用户（对方），不使用群聊堆叠头像 -->
+        <a href="{config.relative_path}/user/{./users.0.userslug}" class="text-decoration-none" style="z-index: 2; position: relative;">
+            {buildAvatar(./users.0, "48px", true, "im-list-avatar shadow-sm")}
+        </a>
+        
+        <!-- 未读红点 (头像右上角) -->
+        {{{ if ./unread }}}
+        <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle" style="width: 10px; height: 10px; margin-left: -5px; margin-top: 5px;">
+            <span class="visually-hidden">New alerts</span>
+        </span>
+        {{{ end }}}
+    </div>
+
+    <!-- 2. 右侧：聊天触发区 (点击进入聊天) -->
+    <!-- 注意：这里用 chat-room-btn 类，NodeBB JS 会绑定点击事件 -->
+    <div class="chat-room-btn d-flex flex-column flex-grow-1 overflow-hidden justify-content-center" style="cursor: pointer; height: 60px;">
+        
+        <!-- 第一行：名字 + 时间 -->
+        <div class="d-flex justify-content-between align-items-center mb-1">
+            <span component="chat/room/title" class="im-list-name fw-bold text-dark text-truncate" style="font-size: 16px; max-width: 70%;">
+                {{{ if ./roomName}}}
+                    {./roomName}
+                {{{ else }}}
+                    {./users.0.displayname}
+                {{{ end }}}
+            </span>
+            <!-- 时间 -->
+            <small class="text-muted timeago" style="font-size: 11px;" title="{./lastMessage.timestampISO}"></small>
+        </div>
+
+        <!-- 第二行：消息预览 -->
+        <div class="im-list-teaser text-muted text-truncate" style="font-size: 13px; opacity: 0.8;">
+             <!-- 这里直接引用 teaser 内容，去除原来复杂的 import 以保持样式纯净 -->
+             {{{ if ./teaser.content }}}
+                {./teaser.content}
+             {{{ else }}}
+                <span class="fst-italic">无消息</span>
+             {{{ end }}}
+        </div>
+    </div>
+
+    <!-- 移除了原有的 mark-read 按钮，微信风格通常是点进去自动消红点 -->
 </div>
-{{{ if !@last }}}
-<hr class="my-1" />
-{{{ else }}}
-{{{ if showBottomHr }}}
-<hr class="my-1" />
-{{{ end }}}
-{{{ end }}}
