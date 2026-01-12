@@ -1,33 +1,34 @@
-<div component="chat/composer" class="chat-app-bottom-bar">
-    <div class="composer-main d-flex align-items-end gap-2 p-2">
-        <!-- 1. 表情按钮 -->
-        <button class="btn-chat-icon" type="button" component="chat/emoji/picker">
-            <i class="fa fa-smile-o"></i>
-        </button>
-
-        <!-- 2. 图片/拍照按钮 (微信的 + 号位置) -->
-        {{{ if canUpload }}}
-        <button class="btn-chat-icon" type="button" onclick="$('#chat-upload-input').click()">
-            <i class="fa fa-plus-circle"></i>
-        </button>
-        {{{ end }}}
-
-        <!-- 3. 输入框 -->
-        <div class="input-flex-wrapper">
-            <textarea component="chat/input" class="chat-input-app" placeholder="输入内容..." rows="1"></textarea>
+<div component="chat/composer" class="chat-app-input-bar">
+    <div class="composer-container">
+        <!-- 1. 输入框 (居中并自动伸缩) -->
+        <div class="input-wrapper">
+            <textarea component="chat/input" rows="1" placeholder="输入内容..." class="chat-app-textarea"></textarea>
         </div>
 
-        <!-- 4. 动态按钮 (语音/发送) -->
-        <div class="action-btn-wrapper">
-            <button id="chat-main-btn" class="btn-send-app mode-voice" data-action="send">
+        <!-- 2. 右侧功能区 (图标集合) -->
+        <div class="action-icons-group">
+            <!-- 表情按钮 -->
+            <button class="icon-btn" type="button" component="chat/emoji/picker">
+                <i class="fa fa-smile-o"></i>
+            </button>
+            
+            <!-- 加号按钮 (触发拍照/图片) -->
+            {{{ if canUpload }}}
+            <button class="icon-btn" type="button" onclick="$('#chat-real-upload').click()">
+                <i class="fa fa-plus-circle"></i>
+            </button>
+            {{{ end }}}
+
+            <!-- 动态按钮：发送或语音 -->
+            <button id="chat-submit-btn" class="main-action-btn mode-voice" data-action="send">
                 <i class="fa fa-microphone icon-mic"></i>
-                <span class="text-send d-none">发送</span>
+                <span class="text-send">发送</span>
             </button>
         </div>
     </div>
 
-    <!-- 隐藏的上传表单 (不可删) -->
+    <!-- 隐藏的真实上传控件 -->
     <form class="hidden" component="chat/upload" method="post" enctype="multipart/form-data">
-        <input id="chat-upload-input" type="file" name="files[]" multiple accept="image/*" class="hidden"/>
+        <input id="chat-real-upload" type="file" name="files[]" multiple accept="image/*" class="hidden"/>
     </form>
 </div>
