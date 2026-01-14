@@ -19,7 +19,7 @@ editController.get = async function (req, res, next) {
 	}
 
 	// --- 关键修改：手动提取国籍和所在地数据，确保前端回显正常 ---
-	const extraFields = await user.getUserFields(res.locals.uid, ['nationality', 'location']);
+	const extraFields = await user.getUserFields(userData.uid, ['nationality', 'location']);
 	Object.assign(userData, extraFields);
 	// -------------------------------------------------------
 
