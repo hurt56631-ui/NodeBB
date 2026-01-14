@@ -18,7 +18,7 @@ module.exports = function (User) {
 		let fields = [
 			'username', 'email', 'fullname',
 			'groupTitle', 'birthday', 'signature', 'aboutme',
-			'nationality', 'location', // 这里新增了国籍和所在地字段
+			'nationality', 'location', // <--- 关键修改：添加这两个字段
 			...await db.getSortedSetRange('user-custom-fields', 0, -1),
 		];
 		if (Array.isArray(extraFields)) {
