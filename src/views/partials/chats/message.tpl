@@ -42,7 +42,7 @@
                     <i class="fa fa-pencil-square-o cursor-pointer text-success" onclick="window.chatCorrect('{messages.fromUser.username}', '{messages.contentRaw}')" title="改错"></i>
 
                     <!-- 回复 -->
-                    <i class="fa fa-reply cursor-pointer text-primary" onclick="window.chatReply('{messages.fromUser.username}')" title="回复"></i>
+                    <i class="fa fa-reply cursor-pointer text-primary" onclick="window.chatReply(this)" title="回复"></i>
 
                     <!-- 更多菜单 (撤回等) -->
                     <div class="dropdown d-inline-block">
