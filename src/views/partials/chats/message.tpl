@@ -1,152 +1,158 @@
-<li component="chat/message" class="chat-message w-100 mb-1 {{{ if messages.deleted }}} deleted{{{ end }}} {{{ if messages.pinned}}} pinned{{{ end }}} {{{ if messages.self }}}self justify-content-end{{{ else }}}justify-content-start{{{ end }}}" data-mid="{messages.messageId}" data-uid="{messages.fromuid}" data-self="{messages.self}" data-timestamp="{messages.timestamp}" style="display: flex; position: relative;">
+<li component="chat/message" class="chat-message mx-2 pe-2 {{{ if messages.deleted }}} deleted{{{ end }}} {{{ if messages.pinned}}} pinned{{{ end }}} {{{ if messages.newSet }}}border-top pt-3{{{ end }}} {{{ if messages.self }}}self{{{ end }}} modern-chat-item" data-mid="{messages.messageId}" data-uid="{messages.fromuid}" data-index="{messages.index}" data-self="{messages.self}" data-break="{messages.newSet}" data-timestamp="{messages.timestamp}" data-username="{messages.fromUser.username}" data-displayname="{messages.fromUser.displayname}">
 
 	{{{ if messages.parent }}}
 	<!-- IMPORT partials/chats/parent.tpl -->
 	{{{ end }}}
 
-    <!-- 1. 头像区域 (仅他人显示，自己不显示) -->
-    {{{ if !messages.self }}}
-    <div class="chat-avatar-wrapper me-2" style="flex-shrink: 0;">
-        <a href="{config.relative_path}/user/{messages.fromUser.userslug}" class="text-decoration-none">
-            {buildAvatar(messages.fromUser, "42px", true, "not-responsive")}
-            <!-- 国旗容器 -->
-            <span class="country-flag" data-uid="{messages.fromuid}"></span>
-        </a>
-    </div>
-    {{{ end }}}
+	<!-- 1. 头像区域：包含头像、在线状态、国旗 -->
+	<div class="modern-avatar-wrapper {{{ if !messages.newSet }}}hidden{{{ end }}}">
+		<a href="{config.relative_path}/user/{messages.fromUser.userslug}" class="text-decoration-none modern-avatar-link">
+			{buildAvatar(messages.fromUser, "48px", true, "not-responsive modern-avatar")}
+			
+			<!-- 在线状态：移到右上角 -->
+			<span class="modern-status-indicator {{{ if messages.fromUser.status }}}status-{messages.fromUser.status}{{{ end }}}"></span>
+			
+			<!-- 国旗：移到右下角 (假设后端传回了 nationality 字段) -->
+			<!-- 如果没有 nationality 字段，此 span 会隐藏 -->
+			{{{ if messages.fromUser.nationality }}}
+			<span class="modern-flag-indicator" style="background-image: url('https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/3.4.6/flags/4x3/{messages.fromUser.nationality}.svg');"></span>
+			{{{ end }}}
+		</a>
+	</div>
 
-    <!-- 2. 内容区域 -->
-    <div class="message-content-wrapper" style="max-width: 75%; display: flex; flex-direction: column; {{{ if messages.self }}}align-items: flex-end;{{{ else }}}align-items: flex-start;{{{ end }}}">
-        
-        <!-- 用户名 (仅他人显示) -->
-        {{{ if !messages.self }}}
-        <div class="message-header text-muted small lh-1 mb-1 {{{ if !messages.newSet }}}hidden{{{ end }}}">
-            <span class="fw-bold">{messages.fromUser.displayname}</span>
-            <span class="timeago ms-1" style="font-size: 10px;" title="{messages.timestampISO}"></span>
-        </div>
-        {{{ end }}}
+	<!-- 2. 消息内容区域：包含头部信息和气泡 -->
+	<div class="modern-message-content">
+		
+		<!-- 头部：用户名和时间 (自己发送时隐藏) -->
+		<div class="message-header lh-1 d-flex align-items-center gap-2 text-sm {{{ if !messages.newSet }}}hidden{{{ end }}} pb-2 modern-message-header">
+			<span class="chat-user fw-semibold"><a href="{config.relative_path}/user/{messages.fromUser.userslug}">{messages.fromUser.displayname}</a></span>
+			{{{ if messages.fromUser.banned }}}
+			<span class="badge bg-danger">[[user:banned]]</span>
+			{{{ end }}}
+			{{{ if messages.fromUser.deleted }}}
+			<span class="badge bg-danger">[[user:deleted]]</span>
+			{{{ end }}}
+			<span class="chat-timestamp text-muted timeago" title="{messages.timestampISO}"></span>
 
-        <!-- 消息气泡 -->
-        <div class="message-body-container position-relative">
-            <div component="chat/message/body" class="message-body px-3 py-2 text-break shadow-sm" oncontextmenu="return false;">
-                {messages.content}
-            </div>
+			<div component="chat/message/edited" class="text-muted ms-auto {{{ if !messages.edited }}}hidden{{{ end }}}" title="[[global:edited-timestamp, {isoTimeToLocaleString(messages.editedISO, config.userLang)}]]"><i class="fa fa-edit"></i></span></div>
+		</div>
 
-            <!-- 控制栏 (TTS, 回复, 改错) -->
-            <div class="message-controls mt-1">
-                <div class="d-flex align-items-center gap-2 bg-light rounded-pill px-2 py-1 border">
-                    <!-- TTS 朗读 -->
-                    <i class="fa fa-volume-up tts-icon cursor-pointer text-secondary" onclick="window.chatTTS(this, '{messages.contentRaw}')" title="朗读"></i>
-                    
-                    <!-- 改错 (模拟 HelloTalk) -->
-                    <i class="fa fa-pencil-square-o cursor-pointer text-success" onclick="window.chatCorrect('{messages.fromUser.username}', '{messages.contentRaw}')" title="改错"></i>
+		<div class="message-body-wrapper modern-bubble-wrapper">
+			<!-- 消息气泡 -->
+			<div component="chat/message/body" class="message-body ps-0 py-0 overflow-auto text-break modern-bubble" id="content-{messages.messageId}">
+				{messages.content}
+			</div>
 
-                    <!-- 回复 -->
-                    <i class="fa fa-reply cursor-pointer text-primary" onclick="window.chatReply('{messages.fromUser.username}')" title="回复"></i>
+			<!-- 操作按钮组 -->
+			<div component="chat/message/controls" class="position-relative modern-controls-wrapper">
+				<div class="btn-group border shadow-sm controls position-absolute bg-body end-0 modern-controls" style="bottom:1rem;">
+					
+					<!-- 新增：TTS 朗读按钮 -->
+					<button class="btn btn-sm btn-link modern-tts-btn" onclick="playTTS('{messages.messageId}')" title="朗读">
+						<i class="fa fa-volume-up"></i>
+					</button>
 
-                    <!-- 更多菜单 (撤回等) -->
-                    <div class="dropdown d-inline-block">
-                        <i class="fa fa-ellipsis-h cursor-pointer text-secondary" data-bs-toggle="dropdown"></i>
-                        <ul class="dropdown-menu dropdown-menu-end p-1 shadow-sm text-sm">
-                            {{{ if (isAdminOrGlobalMod || (!config.disableChatMessageEditing && messages.self)) }}}
-                            <li><a href="#" class="dropdown-item text-danger rounded" data-action="delete"><i class="fa fa-trash me-2"></i> 撤回消息</a></li>
-                            <li><a href="#" class="dropdown-item rounded" data-action="edit"><i class="fa fa-edit me-2"></i> 编辑</a></li>
-                            {{{ end }}}
-                            <li><a href="#" class="dropdown-item rounded" data-action="copy-link" data-mid="{messages.mid}"><i class="fa fa-link me-2"></i> 复制链接</a></li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+					<button class="btn btn-sm btn-link" data-action="reply" title="[[topic:reply]]"><i class="fa fa-reply"></i></button>
 
-    <!-- 脚本：功能逻辑 -->
-    <script>
-    (function() {
-        // --- 1. 国旗逻辑 ---
-        const uid = "{messages.fromuid}";
-        const mid = "{messages.messageId}";
-        if (!window.flagCache) window.flagCache = {};
+					<div class="btn-group d-inline-block">
+						<button class="btn btn-sm btn-link dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><i class="fa fa-ellipsis" type="button"></i></button>
+						<ul class="dropdown-menu dropdown-menu-end p-1 text-sm list-unstyled modern-dropdown-menu" role="menu">
+							{{{ if (isAdminOrGlobalMod || (!config.disableChatMessageEditing && messages.self)) }}}
+							<li>
+								<a href="#" class="dropdown-item rounded-1" data-action="edit" role="menuitem"><span class="d-inline-flex align-items-center gap-2"><i class="fa fa-fw fa-pencil text-muted"></i> [[topic:edit]]</span></a>
+							</li>
+							
+							<!-- 撤回/删除逻辑：JS会根据时间控制显示文本 -->
+							<li>
+								<a href="#" class="dropdown-item rounded-1 modern-withdraw-btn" data-action="delete" data-timestamp="{messages.timestamp}" role="menuitem">
+									<span class="d-inline-flex align-items-center gap-2">
+										<i class="fa fa-fw fa-trash text-muted"></i> 
+										<span class="withdraw-text">删除</span>
+									</span>
+								</a>
+							</li>
+							
+							<li>
+								<a href="#" class="dropdown-item rounded-1" data-action="restore" role="menuitem"><span class="d-inline-flex align-items-center gap-2"><i class="fa fa-fw fa-repeat text-muted"></i> [[topic:restore]]</span></a>
+							</li>
 
-        // 只有他人消息才找国旗元素
-        const flagEl = document.querySelector(`.chat-message[data-mid="${mid}"] .country-flag`);
-        
-        if (flagEl) {
-            if (window.flagCache[uid]) {
-                renderFlag(flagEl, window.flagCache[uid]);
-            } else {
-                // 获取用户资料
-                fetch(config.relative_path + '/api/user/' + uid)
-                    .then(r => r.json())
-                    .then(d => {
-                        const loc = d.location || d.userData?.location || '';
-                        window.flagCache[uid] = loc;
-                        renderFlag(flagEl, loc);
-                    });
-            }
-        }
+							<!-- 新增：改错按钮 -->
+							<li>
+								<a href="#" class="dropdown-item rounded-1" onclick="enableCorrectionMode('{messages.messageId}')" role="menuitem"><span class="d-inline-flex align-items-center gap-2"><i class="fa fa-fw fa-check-circle text-muted"></i> 改错</span></a>
+							</li>
+							{{{ end }}}
 
-        function renderFlag(el, loc) {
-            if (!loc) return;
-            // 简单关键词匹配国旗，你可以自己加更多
-            const map = {'China': '🇨🇳', 'CN': '🇨🇳', '中国': '🇨🇳', 'US': '🇺🇸', 'UK': '🇬🇧', 'Japan': '🇯🇵'};
-            let icon = '';
-            for(let k in map) { if(loc.includes(k)) icon = map[k]; }
-            if(icon) { el.innerHTML = icon; el.style.display = 'block'; }
-        }
+							{{{ if (isAdminOrGlobalMod || isOwner )}}}
+							<li>
+								<a href="#" class="dropdown-item rounded-1" data-action="pin" role="menuitem"><span class="d-inline-flex align-items-center gap-2"><i class="fa fa-fw fa-thumbtack text-muted"></i> [[modules:chat.pin-message]]</span></a>
+							</li>
+							<li>
+								<a href="#" class="dropdown-item rounded-1" data-action="unpin" role="menuitem"><span class="d-inline-flex align-items-center gap-2"><i class="fa fa-fw fa-thumbtack fa-rotate-90 text-muted"></i> [[modules:chat.unpin-message]]</span></a>
+							</li>
+							<li class="dropdown-divider"></li>
+							{{{ end }}}
 
-        // --- 2. 全局功能函数注册 ---
-        
-        // TTS
-        if (!window.chatTTS) {
-            window.chatTTS = function(btn, text) {
-                if (!text) return;
-                const icon = btn;
-                
-                // 停止逻辑
-                if (window.currentAudio && !window.currentAudio.paused) {
-                    window.currentAudio.pause();
-                    window.currentAudio = null;
-                    document.querySelectorAll('.tts-icon').forEach(i => i.className = 'fa fa-volume-up tts-icon cursor-pointer text-secondary');
-                    return;
-                }
+							{{{ if isAdminOrGlobalMod }}}
+							<li>
+								<a href="#" class="dropdown-item rounded-1 chat-ip-button" role="menuitem">
+									<span class="d-inline-flex align-items-center gap-2 show"><i class="fa fa-fw fa-info-circle text-muted"></i> [[modules:chat.show-ip]]</span>
+									<span class="d-inline-flex align-items-center gap-2 copy hidden"><i class="fa fa-fw fa-copy text-muted"></i> <span class="copy-ip-text"></span></span>
+								</a>
+							</li>
+							{{{ end }}}
 
-                icon.className = 'fa fa-spinner fa-spin text-primary';
-                
-                const url = `https://t.leftsite.cn/tts?t=${encodeURIComponent(text)}&v=zh-CN-XiaoxiaoMultilingualNeural&r=0`;
-                const audio = new Audio(url);
-                window.currentAudio = audio;
+							<li>
+								<a href="#" class="dropdown-item rounded-1" data-action="copy-text" data-mid="{messages.mid}" role="menuitem"><span class="d-inline-flex align-items-center gap-2"><i class="fa fa-fw fa-copy text-muted"></i> [[modules:chat.copy-text]]</span></a>
+							</li>
 
-                audio.oncanplaythrough = () => { 
-                    audio.play(); 
-                    icon.className = 'fa fa-stop-circle text-danger cursor-pointer'; 
-                };
-                audio.onended = () => { icon.className = 'fa fa-volume-up tts-icon cursor-pointer text-secondary'; };
-                audio.onerror = () => { icon.className = 'fa fa-exclamation-triangle text-warning'; };
-            };
-        }
-
-        // 改错 (HelloTalk 风格)
-        if (!window.chatCorrect) {
-            window.chatCorrect = function(username, rawText) {
-                require(['composer'], function(composer) {
-                    const tid = ajaxify.data.tid;
-                    const text = `> ${rawText}\n\n修改：\n~~错误~~ **正确**`;
-                    composer.newReply(tid, undefined, text);
-                });
-            };
-        }
-
-        // 回复
-        if (!window.chatReply) {
-            window.chatReply = function(username) {
-                require(['composer'], function(composer) {
-                    const tid = ajaxify.data.tid;
-                    composer.newReply(tid, undefined, '@' + username + ' ');
-                });
-            };
-        }
-
-    })();
-    </script>
+							<li>
+								<a href="#" class="dropdown-item rounded-1" data-action="copy-link" data-mid="{messages.mid}" role="menuitem"><span class="d-inline-flex align-items-center gap-2"><i class="fa fa-fw fa-link text-muted"></i> [[modules:chat.copy-link]]</span></a>
+							</li>
+						</ul>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
 </li>
+
+<!-- 内联脚本：处理 TTS 和 撤回逻辑 -->
+<script>
+	// 1. TTS 朗读功能
+	function playTTS(messageId) {
+		const contentDiv = document.getElementById('content-' + messageId);
+		if (!contentDiv) return;
+		const text = contentDiv.innerText;
+		const audioUrl = 'https://t.leftsite.cn/api/audio?text=' + encodeURIComponent(text) + '&speaker=zh-CN-XiaoxiaoMultilingualNeural';
+		const audio = new Audio(audioUrl);
+		audio.play();
+	}
+
+	// 2. 改错功能 (简单模拟，实际需要配合编辑器插件)
+	function enableCorrectionMode(messageId) {
+		const contentDiv = document.getElementById('content-' + messageId);
+		if (!contentDiv) return;
+		// 这里仅做演示：将内容变为可编辑，并提示用户
+		contentDiv.contentEditable = true;
+		contentDiv.focus();
+		contentDiv.style.border = "1px dashed red";
+		alert("已进入改错模式，请直接修改文字。");
+		// 实际开发中，这里需要绑定保存事件，提交到后端，并对比差异用红色标记
+	}
+
+	// 3. 撤回 vs 删除 逻辑 (页面加载后执行)
+	document.addEventListener("DOMContentLoaded", function() {
+		const withdrawBtns = document.querySelectorAll('.modern-withdraw-btn');
+		const now = Date.now();
+		withdrawBtns.forEach(btn => {
+			const timestamp = parseInt(btn.getAttribute('data-timestamp'), 10);
+			// 假设撤回时限为 2 分钟 (120000 毫秒)
+			if (now - timestamp < 120000) {
+				btn.querySelector('.withdraw-text').innerText = "撤回";
+				// 注意：这里需要后端支持 'withdraw' action，否则仍执行 delete
+			} else {
+				btn.querySelector('.withdraw-text').innerText = "删除";
+			}
+		});
+	});
+</script>
