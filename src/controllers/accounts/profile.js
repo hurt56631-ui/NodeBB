@@ -24,6 +24,11 @@ profileController.get = async function (req, res, next) {
 		return next();
 	}
 
+	// --- 【核心修改】手动从数据库提取国籍和所在地 ---
+	const extraFields = await user.getUserFields(userData.uid, ['nationality', 'location']);
+	Object.assign(userData, extraFields);
+	// ------------------------------------------------
+
 	await incrementProfileViews(req, userData);
 
 	const [latestPosts, bestPosts, customUserFields] = await Promise.all([
