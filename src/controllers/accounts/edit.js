@@ -8,6 +8,7 @@ const privileges = require('../../privileges');
 const plugins = require('../../plugins');
 const file = require('../../file');
 const accountHelpers = require('./helpers');
+const _ = require('lodash'); // 引入 lodash 用于字段过滤
 
 const editController = module.exports;
 
@@ -16,6 +17,12 @@ editController.get = async function (req, res, next) {
 	if (!userData) {
 		return next();
 	}
+
+	// --- 关键修改：手动提取国籍和所在地数据，确保前端回显正常 ---
+	const extraFields = await user.getUserFields(res.locals.uid, ['nationality', 'location']);
+	Object.assign(userData, extraFields);
+	// -------------------------------------------------------
+
 	const {
 		username,
 		userslug,
@@ -83,6 +90,29 @@ editController.get = async function (req, res, next) {
 	userData.editButtons = [];
 
 	res.render('account/edit', userData);
+};
+
+// --- 新增修改：处理提交保存请求的逻辑 ---
+editController.update = async function (req, res) {
+	const uid = res.locals.uid; // 当前要修改的用户ID
+
+	// 定义允许保存的字段白名单（必须包含 nationality 和 location）
+	const allowedFields = [
+		'fullname', 'birthday', 'location', 'nationality', 
+		'aboutme', 'signature', 'groupTitle'
+	];
+
+	// 从请求体中提取数据
+	const data = _.pick(req.body, allowedFields);
+	data.uid = uid;
+
+	try {
+		// 调用 User 核心逻辑保存到数据库
+		await user.updateProfile(req.uid, data, allowedFields);
+		res.json({ message: '[[user:profile-updated]]' });
+	} catch (err) {
+		res.status(400).json({ message: err.message });
+	}
 };
 
 editController.password = async function (req, res, next) {
