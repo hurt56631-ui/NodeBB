@@ -1,65 +1,58 @@
-<li component="chat/message" class="chat-message mx-2 pe-2 {{{ if messages.deleted }}} deleted{{{ end }}} {{{ if messages.pinned}}} pinned{{{ end }}} {{{ if messages.newSet }}}new-set pt-3{{{ end }}} {{{ if messages.self }}}self{{{ end }}}" data-mid="{messages.messageId}" data-uid="{messages.fromuid}" data-index="{messages.index}" data-self="{messages.self}" data-break="{messages.newSet}" data-timestamp="{messages.timestamp}" data-username="{messages.fromUser.username}">
+<li component="chat/message" class="chat-message w-100 mb-1 {{{ if messages.deleted }}} deleted{{{ end }}} {{{ if messages.pinned}}} pinned{{{ end }}} {{{ if messages.self }}}self justify-content-end{{{ else }}}justify-content-start{{{ end }}}" data-mid="{messages.messageId}" data-uid="{messages.fromuid}" data-self="{messages.self}" data-timestamp="{messages.timestamp}" style="display: flex; position: relative;">
 
 	{{{ if messages.parent }}}
 	<!-- IMPORT partials/chats/parent.tpl -->
 	{{{ end }}}
 
-    <!-- 1. 头像区域 -->
-    <div class="chat-avatar-wrapper">
-        <a href="{config.relative_path}/user/{messages.fromUser.userslug}" class="text-decoration-none avatar-link">
-            {buildAvatar(messages.fromUser, "48px", true, "not-responsive")}
-            <span class="status-dot {{{ if messages.fromUser.status }}}status-{messages.fromUser.status}{{{ end }}}"></span>
-            
-            <!-- 国旗容器：通过 JS 动态填充 -->
+    <!-- 1. 头像区域 (仅他人显示，自己不显示) -->
+    {{{ if !messages.self }}}
+    <div class="chat-avatar-wrapper me-2" style="flex-shrink: 0;">
+        <a href="{config.relative_path}/user/{messages.fromUser.userslug}" class="text-decoration-none">
+            {buildAvatar(messages.fromUser, "42px", true, "not-responsive")}
+            <!-- 国旗容器 -->
             <span class="country-flag" data-uid="{messages.fromuid}"></span>
         </a>
     </div>
+    {{{ end }}}
 
     <!-- 2. 内容区域 -->
-    <div class="message-content-wrapper">
+    <div class="message-content-wrapper" style="max-width: 75%; display: flex; flex-direction: column; {{{ if messages.self }}}align-items: flex-end;{{{ else }}}align-items: flex-start;{{{ end }}}">
         
-        <!-- 用户名 (仅他人消息显示) -->
-        <div class="message-header lh-1 d-flex align-items-center gap-2 text-sm {{{ if !messages.newSet }}}hidden-name{{{ end }}} pb-1">
-            <span class="chat-user fw-semibold">
-                <a href="{config.relative_path}/user/{messages.fromUser.userslug}">{messages.fromUser.displayname}</a>
-            </span>
-            <span class="chat-timestamp text-muted timeago" title="{messages.timestampISO}"></span>
+        <!-- 用户名 (仅他人显示) -->
+        {{{ if !messages.self }}}
+        <div class="message-header text-muted small lh-1 mb-1 {{{ if !messages.newSet }}}hidden{{{ end }}}">
+            <span class="fw-bold">{messages.fromUser.displayname}</span>
+            <span class="timeago ms-1" style="font-size: 10px;" title="{messages.timestampISO}"></span>
         </div>
+        {{{ end }}}
 
         <!-- 消息气泡 -->
-        <div class="message-body-container">
-            <!-- 消息正文 -->
-            <div component="chat/message/body" class="message-body px-3 py-2 text-break" oncontextmenu="return false;">
+        <div class="message-body-container position-relative">
+            <div component="chat/message/body" class="message-body px-3 py-2 text-break shadow-sm" oncontextmenu="return false;">
                 {messages.content}
             </div>
 
-            <!-- 反应 (Reactions) -->
-            <!-- IMPORT partials/chats/reactions.tpl -->
-
-            <!-- 控制栏 -->
-            <div component="chat/message/controls" class="message-controls">
-                <div class="btn-group shadow-sm controls-group bg-body">
+            <!-- 控制栏 (TTS, 回复, 改错) -->
+            <div class="message-controls mt-1">
+                <div class="d-flex align-items-center gap-2 bg-light rounded-pill px-2 py-1 border">
                     <!-- TTS 朗读 -->
-                    <button class="btn btn-sm btn-link tts-btn" type="button" onclick="playTTS(this)" data-text="{messages.contentRaw}">
-                        <i class="fa fa-volume-up"></i>
-                    </button>
-
+                    <i class="fa fa-volume-up tts-icon cursor-pointer text-secondary" onclick="window.chatTTS(this, '{messages.contentRaw}')" title="朗读"></i>
+                    
                     <!-- 改错 (模拟 HelloTalk) -->
-                    <button class="btn btn-sm btn-link correction-btn" type="button" title="改错" onclick="triggerCorrection('{messages.fromUser.username}', '{messages.contentRaw}')">
-                        <i class="fa fa-pencil-square-o text-success"></i>
-                    </button>
+                    <i class="fa fa-pencil-square-o cursor-pointer text-success" onclick="window.chatCorrect('{messages.fromUser.username}', '{messages.contentRaw}')" title="改错"></i>
 
-                    <!-- 更多菜单 -->
-                    <div class="btn-group d-inline-block">
-                        <button class="btn btn-sm btn-link dropdown-toggle" data-bs-toggle="dropdown"><i class="fa fa-ellipsis-h"></i></button>
-                        <ul class="dropdown-menu dropdown-menu-end p-1 text-sm list-unstyled custom-context-menu">
-                            <li class="dropdown-item" onclick="triggerReply('{messages.fromUser.username}')"><i class="fa fa-reply me-2"></i> 回复</li>
-                            <li class="dropdown-item" data-action="copy-text" data-mid="{messages.mid}"><i class="fa fa-copy me-2"></i> 复制</li>
-                            
+                    <!-- 回复 -->
+                    <i class="fa fa-reply cursor-pointer text-primary" onclick="window.chatReply('{messages.fromUser.username}')" title="回复"></i>
+
+                    <!-- 更多菜单 (撤回等) -->
+                    <div class="dropdown d-inline-block">
+                        <i class="fa fa-ellipsis-h cursor-pointer text-secondary" data-bs-toggle="dropdown"></i>
+                        <ul class="dropdown-menu dropdown-menu-end p-1 shadow-sm text-sm">
                             {{{ if (isAdminOrGlobalMod || (!config.disableChatMessageEditing && messages.self)) }}}
-                            <li class="dropdown-divider"></li>
-                            <li class="dropdown-item text-danger" data-action="delete"><i class="fa fa-trash me-2"></i> 撤回</li>
+                            <li><a href="#" class="dropdown-item text-danger rounded" data-action="delete"><i class="fa fa-trash me-2"></i> 撤回消息</a></li>
+                            <li><a href="#" class="dropdown-item rounded" data-action="edit"><i class="fa fa-edit me-2"></i> 编辑</a></li>
                             {{{ end }}}
+                            <li><a href="#" class="dropdown-item rounded" data-action="copy-link" data-mid="{messages.mid}"><i class="fa fa-link me-2"></i> 复制链接</a></li>
                         </ul>
                     </div>
                 </div>
@@ -67,108 +60,93 @@
         </div>
     </div>
 
-    <!-- 嵌入式脚本：处理 TTS、国旗、改错 -->
+    <!-- 脚本：功能逻辑 -->
     <script>
     (function() {
-        // 1. 获取国旗逻辑 (通过 API 获取用户 Location)
+        // --- 1. 国旗逻辑 ---
         const uid = "{messages.fromuid}";
-        const flagEl = document.querySelector('.chat-message[data-mid="{messages.messageId}"] .country-flag');
+        const mid = "{messages.messageId}";
+        if (!window.flagCache) window.flagCache = {};
+
+        // 只有他人消息才找国旗元素
+        const flagEl = document.querySelector(`.chat-message[data-mid="${mid}"] .country-flag`);
         
-        // 简单的缓存避免重复请求
-        if (!window.userLocationCache) window.userLocationCache = {};
-
-        function setFlag(location) {
-            if (!location) return;
-            // 简单映射表：根据你的用户填写习惯修改
-            const map = {
-                'China': '🇨🇳', 'CN': '🇨🇳', '中国': '🇨🇳',
-                'USA': '🇺🇸', 'US': '🇺🇸', '美国': '🇺🇸',
-                'UK': '🇬🇧', 'Japan': '🇯🇵', 'Korea': '🇰🇷'
-            };
-            // 模糊匹配
-            let flag = '';
-            for (let key in map) {
-                if (location.includes(key)) { flag = map[key]; break; }
+        if (flagEl) {
+            if (window.flagCache[uid]) {
+                renderFlag(flagEl, window.flagCache[uid]);
+            } else {
+                // 获取用户资料
+                fetch(config.relative_path + '/api/user/' + uid)
+                    .then(r => r.json())
+                    .then(d => {
+                        const loc = d.location || d.userData?.location || '';
+                        window.flagCache[uid] = loc;
+                        renderFlag(flagEl, loc);
+                    });
             }
-            // 如果匹配到了显示国旗，否则显示位置文字
-            flagEl.innerHTML = flag ? flag : ''; 
-            if(flag) flagEl.style.display = 'block';
         }
 
-        if (window.userLocationCache[uid]) {
-            setFlag(window.userLocationCache[uid]);
-        } else {
-            // 这里的 API 路径取决于 NodeBB 版本，通常是 /api/user/uid
-            fetch(config.relative_path + '/api/user/' + uid)
-                .then(res => res.json())
-                .then(data => {
-                    const loc = data.location || data.userData?.location || '';
-                    window.userLocationCache[uid] = loc;
-                    setFlag(loc);
-                })
-                .catch(e => console.log('Flag fetch error', e));
+        function renderFlag(el, loc) {
+            if (!loc) return;
+            // 简单关键词匹配国旗，你可以自己加更多
+            const map = {'China': '🇨🇳', 'CN': '🇨🇳', '中国': '🇨🇳', 'US': '🇺🇸', 'UK': '🇬🇧', 'Japan': '🇯🇵'};
+            let icon = '';
+            for(let k in map) { if(loc.includes(k)) icon = map[k]; }
+            if(icon) { el.innerHTML = icon; el.style.display = 'block'; }
         }
+
+        // --- 2. 全局功能函数注册 ---
+        
+        // TTS
+        if (!window.chatTTS) {
+            window.chatTTS = function(btn, text) {
+                if (!text) return;
+                const icon = btn;
+                
+                // 停止逻辑
+                if (window.currentAudio && !window.currentAudio.paused) {
+                    window.currentAudio.pause();
+                    window.currentAudio = null;
+                    document.querySelectorAll('.tts-icon').forEach(i => i.className = 'fa fa-volume-up tts-icon cursor-pointer text-secondary');
+                    return;
+                }
+
+                icon.className = 'fa fa-spinner fa-spin text-primary';
+                
+                const url = `https://t.leftsite.cn/tts?t=${encodeURIComponent(text)}&v=zh-CN-XiaoxiaoMultilingualNeural&r=0`;
+                const audio = new Audio(url);
+                window.currentAudio = audio;
+
+                audio.oncanplaythrough = () => { 
+                    audio.play(); 
+                    icon.className = 'fa fa-stop-circle text-danger cursor-pointer'; 
+                };
+                audio.onended = () => { icon.className = 'fa fa-volume-up tts-icon cursor-pointer text-secondary'; };
+                audio.onerror = () => { icon.className = 'fa fa-exclamation-triangle text-warning'; };
+            };
+        }
+
+        // 改错 (HelloTalk 风格)
+        if (!window.chatCorrect) {
+            window.chatCorrect = function(username, rawText) {
+                require(['composer'], function(composer) {
+                    const tid = ajaxify.data.tid;
+                    const text = `> ${rawText}\n\n修改：\n~~错误~~ **正确**`;
+                    composer.newReply(tid, undefined, text);
+                });
+            };
+        }
+
+        // 回复
+        if (!window.chatReply) {
+            window.chatReply = function(username) {
+                require(['composer'], function(composer) {
+                    const tid = ajaxify.data.tid;
+                    composer.newReply(tid, undefined, '@' + username + ' ');
+                });
+            };
+        }
+
     })();
-
-    // 2. TTS 逻辑 (参考你提供的代码)
-    window.ttsState = 'idle';
-    window.currentAudio = null;
-
-    window.playTTS = function(btn) {
-        const text = btn.getAttribute('data-text');
-        if (!text) return;
-
-        // 如果正在播放，点击则停止
-        if (window.ttsState === 'playing' && window.currentAudio) {
-            window.currentAudio.pause();
-            window.ttsState = 'idle';
-            document.querySelectorAll('.tts-btn i').forEach(i => i.className = 'fa fa-volume-up');
-            return;
-        }
-
-        // UI Loading
-        const icon = btn.querySelector('i');
-        icon.className = 'fa fa-spinner fa-spin';
-        window.ttsState = 'loading';
-
-        // 构建 URL
-        const voice = 'zh-CN-XiaoxiaoMultilingualNeural'; // 指定发音人
-        const rate = 0; // 语速
-        const url = `https://t.leftsite.cn/tts?t=${encodeURIComponent(text)}&v=${voice}&r=${rate}`;
-
-        if (window.currentAudio) window.currentAudio = null;
-        window.currentAudio = new Audio(url);
-
-        window.currentAudio.oncanplaythrough = function() {
-            window.currentAudio.play();
-            window.ttsState = 'playing';
-            icon.className = 'fa fa-stop'; // 播放时显示停止图标
-        };
-
-        window.currentAudio.onended = function() {
-            window.ttsState = 'idle';
-            icon.className = 'fa fa-volume-up';
-        };
-
-        window.currentAudio.onerror = function() {
-            window.ttsState = 'idle';
-            icon.className = 'fa fa-exclamation-triangle';
-            alert('TTS 接口请求失败');
-        };
-    };
-
-    // 3. 改错功能触发器
-    window.triggerCorrection = function(username, originalText) {
-        // 模拟 HelloTalk 格式
-        const composer = require('composer');
-        const text = `> ${originalText}\n\n修改建议：\n~~错误~~ **正确**`;
-        composer.newReply(ajaxify.data.tid, undefined, text);
-    };
-    
-    // 4. 普通回复
-    window.triggerReply = function(username) {
-        const composer = require('composer');
-        composer.newReply(ajaxify.data.tid, undefined, '@' + username + ' ');
-    };
     </script>
 </li>
